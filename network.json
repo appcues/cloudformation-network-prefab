@@ -1,0 +1,1481 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "",
+  "Metadata": {
+    "Cfer": {
+      "Version": {
+        "major": 0,
+        "minor": 6,
+        "patch": 0
+      }
+    }
+  },
+  "Parameters": { },
+  "Mappings": { },
+  "Conditions": { },
+  "Resources": {
+    "NetworkVpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "VPC"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkIGW": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "IGW"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkVPCGatewayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "InternetGatewayId": {
+          "Ref": "NetworkIGW"
+        }
+      }
+    },
+    "NetworkEIP0": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "NetworkNAT0": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "NetworkEIP0",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "NetworkPublicSubnet0"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "NAT",
+                  0
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPublicSubnet0": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.252.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  0,
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPublicRouteTable0": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  0,
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDefaultPublicRoute0": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": [
+        "NetworkVPCGatewayAttachment"
+      ],
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable0"
+        },
+        "GatewayId": {
+          "Ref": "NetworkIGW"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkPublicSubnetRouteTableAssociation0": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPublicSubnet0"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable0"
+        }
+      }
+    },
+    "NetworkPrivateSubnet0": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.0.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  0,
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivatePrivateRouteTable0": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  0,
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivateSubnetRouteTableAssociation0": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPrivateSubnet0"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable0"
+        }
+      }
+    },
+    "NetworkPrivateDefaultPrivateRoute0": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable0"
+        },
+        "NatGatewayId": {
+          "Ref": "NetworkNAT0"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkDataSubnet0": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.4.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  0,
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataPrivateRouteTable0": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  0,
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataSubnetRouteTableAssociation0": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkDataSubnet0"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkDataPrivateRouteTable0"
+        }
+      }
+    },
+    "NetworkPublicSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.253.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  1,
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPublicRouteTable1": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  1,
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDefaultPublicRoute1": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": [
+        "NetworkVPCGatewayAttachment"
+      ],
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable1"
+        },
+        "GatewayId": {
+          "Ref": "NetworkIGW"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkPublicSubnetRouteTableAssociation1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPublicSubnet1"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable1"
+        }
+      }
+    },
+    "NetworkPrivateSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.1.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  1,
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivatePrivateRouteTable1": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  1,
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivateSubnetRouteTableAssociation1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPrivateSubnet1"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable1"
+        }
+      }
+    },
+    "NetworkPrivateDefaultPrivateRoute1": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable1"
+        },
+        "NatGatewayId": {
+          "Ref": "NetworkNAT0"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkDataSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.5.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  1,
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataPrivateRouteTable1": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  1,
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataSubnetRouteTableAssociation1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkDataSubnet1"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkDataPrivateRouteTable1"
+        }
+      }
+    },
+    "NetworkPublicSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            2,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.254.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  2,
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPublicRouteTable2": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  2,
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDefaultPublicRoute2": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": [
+        "NetworkVPCGatewayAttachment"
+      ],
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable2"
+        },
+        "GatewayId": {
+          "Ref": "NetworkIGW"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkPublicSubnetRouteTableAssociation2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPublicSubnet2"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable2"
+        }
+      }
+    },
+    "NetworkPrivateSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            2,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.2.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  2,
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivatePrivateRouteTable2": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  2,
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivateSubnetRouteTableAssociation2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPrivateSubnet2"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable2"
+        }
+      }
+    },
+    "NetworkPrivateDefaultPrivateRoute2": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable2"
+        },
+        "NatGatewayId": {
+          "Ref": "NetworkNAT0"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkDataSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            2,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.6.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  2,
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataPrivateRouteTable2": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  2,
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataSubnetRouteTableAssociation2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkDataSubnet2"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkDataPrivateRouteTable2"
+        }
+      }
+    },
+    "NetworkPublicSubnet3": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            3,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.255.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  3,
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPublicRouteTable3": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Public",
+                  3,
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDefaultPublicRoute3": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": [
+        "NetworkVPCGatewayAttachment"
+      ],
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable3"
+        },
+        "GatewayId": {
+          "Ref": "NetworkIGW"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkPublicSubnetRouteTableAssociation3": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPublicSubnet3"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPublicRouteTable3"
+        }
+      }
+    },
+    "NetworkPrivateSubnet3": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            3,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.3.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  3,
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivatePrivateRouteTable3": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Private",
+                  3,
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkPrivateSubnetRouteTableAssociation3": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkPrivateSubnet3"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable3"
+        }
+      }
+    },
+    "NetworkPrivateDefaultPrivateRoute3": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "NetworkPrivatePrivateRouteTable3"
+        },
+        "NatGatewayId": {
+          "Ref": "NetworkNAT0"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0"
+      }
+    },
+    "NetworkDataSubnet3": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            3,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "CidrBlock": "10.0.7.0/24",
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "MapPublicIpOnLaunch": "false",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  3,
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Subnet"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataPrivateRouteTable3": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "NetworkVpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Data",
+                  3,
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::GetAZs": {
+                          "Ref": "AWS::Region"
+                        }
+                      }
+                    ]
+                  },
+                  "Route Table"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "NetworkDataSubnetRouteTableAssociation3": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "NetworkDataSubnet3"
+        },
+        "RouteTableId": {
+          "Ref": "NetworkDataPrivateRouteTable3"
+        }
+      }
+    },
+    "Network": {
+      "Type": "AWS::CloudFormation::WaitConditionHandle",
+      "DependsOn": [
+        "NetworkVpc",
+        "NetworkIGW",
+        "NetworkVPCGatewayAttachment",
+        "NetworkEIP0",
+        "NetworkNAT0",
+        "NetworkPublicSubnet0",
+        "NetworkPublicRouteTable0",
+        "NetworkDefaultPublicRoute0",
+        "NetworkPublicSubnetRouteTableAssociation0",
+        "NetworkPrivateSubnet0",
+        "NetworkPrivatePrivateRouteTable0",
+        "NetworkPrivateSubnetRouteTableAssociation0",
+        "NetworkPrivateDefaultPrivateRoute0",
+        "NetworkDataSubnet0",
+        "NetworkDataPrivateRouteTable0",
+        "NetworkDataSubnetRouteTableAssociation0",
+        "NetworkPublicSubnet1",
+        "NetworkPublicRouteTable1",
+        "NetworkDefaultPublicRoute1",
+        "NetworkPublicSubnetRouteTableAssociation1",
+        "NetworkPrivateSubnet1",
+        "NetworkPrivatePrivateRouteTable1",
+        "NetworkPrivateSubnetRouteTableAssociation1",
+        "NetworkPrivateDefaultPrivateRoute1",
+        "NetworkDataSubnet1",
+        "NetworkDataPrivateRouteTable1",
+        "NetworkDataSubnetRouteTableAssociation1",
+        "NetworkPublicSubnet2",
+        "NetworkPublicRouteTable2",
+        "NetworkDefaultPublicRoute2",
+        "NetworkPublicSubnetRouteTableAssociation2",
+        "NetworkPrivateSubnet2",
+        "NetworkPrivatePrivateRouteTable2",
+        "NetworkPrivateSubnetRouteTableAssociation2",
+        "NetworkPrivateDefaultPrivateRoute2",
+        "NetworkDataSubnet2",
+        "NetworkDataPrivateRouteTable2",
+        "NetworkDataSubnetRouteTableAssociation2",
+        "NetworkPublicSubnet3",
+        "NetworkPublicRouteTable3",
+        "NetworkDefaultPublicRoute3",
+        "NetworkPublicSubnetRouteTableAssociation3",
+        "NetworkPrivateSubnet3",
+        "NetworkPrivatePrivateRouteTable3",
+        "NetworkPrivateSubnetRouteTableAssociation3",
+        "NetworkPrivateDefaultPrivateRoute3",
+        "NetworkDataSubnet3",
+        "NetworkDataPrivateRouteTable3",
+        "NetworkDataSubnetRouteTableAssociation3"
+      ],
+      "Properties": { },
+      "Metadata": {
+        "Type": "Cfer::Prefab::Network",
+        "Properties": {
+          "NatCount": 1,
+          "AvailabilityZones": [
+            {
+              "Fn::Select": [
+                0,
+                {
+                  "Fn::GetAZs": {
+                    "Ref": "AWS::Region"
+                  }
+                }
+              ]
+            },
+            {
+              "Fn::Select": [
+                1,
+                {
+                  "Fn::GetAZs": {
+                    "Ref": "AWS::Region"
+                  }
+                }
+              ]
+            },
+            {
+              "Fn::Select": [
+                2,
+                {
+                  "Fn::GetAZs": {
+                    "Ref": "AWS::Region"
+                  }
+                }
+              ]
+            },
+            {
+              "Fn::Select": [
+                3,
+                {
+                  "Fn::GetAZs": {
+                    "Ref": "AWS::Region"
+                  }
+                }
+              ]
+            }
+          ],
+          "CidrBlock": "10.0.0.0/16",
+          "TierSize": 22,
+          "Tiers": {
+            "Private": {
+              "ForbidInternetAccess": "false"
+            },
+            "Data": {
+              "ForbidInternetAccess": true
+            }
+          },
+          "Tags": [
+            {
+              "Key": "Network",
+              "Value": true
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": { }
+}
+
